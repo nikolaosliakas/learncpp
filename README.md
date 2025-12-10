@@ -3,6 +3,7 @@
 [learn-cpp][0] is the source of most work within this repository.
 
 ## Contents
+[1. Introduction](##Intro-and-build)
 
 ## Intro and build
 
@@ -19,6 +20,9 @@ All will be stored in the `.vscode` folder at the root.
 1. [Build multiple CPP files][1]
 2. [Configurations especially Builds][2]
 
+### Compiler Configuration
+`Diagnostic Error AKA error` - compiler has stopped compilation.
+`Warning` not stop to compilation
 
 <!----Links here--->
 [0]:https://www.learncpp.com/

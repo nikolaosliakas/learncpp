@@ -6,7 +6,20 @@
       "command": "/usr/bin/g++",
       "args": [
         "-fdiagnostics-color=always",
+
         "-g",
+        "-ggdb",
+        "-pedantic-errors",
+        // Warnings - added for learning
+        "-Wall",
+        "-Weffc++",
+        "-Wextra",
+        "-Wconversion",
+        "-Wsign-conversion",
+        // Warnings above for learning
+        //This will treat warnings as errors:
+        "-Werror",
+        "-std=c++20",
         "${file}",
         "-o",
         "${fileDirname}/${fileBasenameNoExtension}"
