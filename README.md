@@ -125,6 +125,68 @@ NB - Default initialization `int x;` will result in indeterminate values. Value 
 
 ### IOStream: cout, cin, endl
 
+See: `./introIOStream.cpp`
+
+### Uninitialized variables and undefined behaviour
+
+No automatic initialization of variables to a default value (like Java).
+
+__The default values for uninitialized variables is whatever was in the memory address before!__
+
+    Initialized = The object is given a known value at the point of definition.
+    Assignment = The object is given a known value beyond the point of definition.
+    Uninitialized = The object has not been given a known value yet.
+
+#### Undefined Behaviour
+
+Using an uninitialized variable can cause undefined behaviour
+
+#### Implementation defined behaviour
+
+In some cases the standard library and a specific compiler may alter the behaviour of the standard library. This is called implementation defined behaviour.
+The below may produce 4 OR 2.
+
+```c++
+
+#include <iostream>
+
+int main()
+{
+	std::cout << sizeof(int) << '\n'; // print how many bytes of memory an int value takes
+
+	return 0;
+}
+```
+### Keywords and identifiers
+
+Find 92 reserved keywords [here][4].
+
+Best Practice for identifiers:
+1. Variables - `int value;` lowercase
+2. User-defined Types - Structs, Classes and enumerations start with capital.
+3. Snake case or camel case (intercapped)
+
+
+underscore prefaces are reserved for OS, library and compiler use.
+
+### Intro Expressions
+
+Programming 'expression' = sequence of literals, vars, operators or function calls.
+
+The result of an expression is one of:
+
+1. A value
+2. An object or a function
+3. Nothing (void functions non-value returning functions)
+
+
+Side-effects:
+1. assignment `x = 5`
+2. printing to console `std::cout << x`
+
+Expressions need to be part of a statement to execute.
+
+### First Programs
 
 
 <!----Links here--->
@@ -132,3 +194,4 @@ NB - Default initialization `int x;` will result in indeterminate values. Value 
 [1]:https://code.visualstudio.com/docs/cpp/config-linux#_modifying-tasksjson
 [2]:https://code.visualstudio.com/docs/cpp/config-linux#_cc-configurations
 [3]:https://www.learncpp.com/cpp-tutorial/variable-assignment-and-initialization/
+[4]:https://www.learncpp.com/cpp-tutorial/keywords-and-naming-identifiers/
