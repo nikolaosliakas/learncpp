@@ -20,7 +20,12 @@
         //This will treat warnings as errors:
         "-Werror",
         "-std=c++20",
-        "${file}",
+        // You can create multiproject naming rules to only link files you want together in the parameterized naming below
+
+        // "${fileDirname}/**.cpp", // all files in directory
+        // "MultiFileProgramAdd.cpp", // Explicit calls for files
+        // "MultiFileProgramMain.cpp",
+        "${file}", // single file
         "-o",
         "${fileDirname}/output/${fileBasenameNoExtension}"
       ],

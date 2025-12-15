@@ -24,7 +24,7 @@ All will be stored in the `.vscode` folder at the root.
 `Diagnostic Error AKA error` - compiler has stopped compilation.
 `Warning` not stop to compilation
 
-## Chapter 0 - C++ Basics
+## Chapter 1 - C++ Basics
 
 ### Statements and Structure of Program
 
@@ -189,15 +189,15 @@ Expressions need to be part of a statement to execute.
 ### First Programs
 Adding and printing: see `./section1Question3.cpp`
 
-## Chapter 1 - Functions and Files
+## Chapter 2 - Functions and Files
 
 ### Functions
 1. Nested functions are not supported.
 2. https://datatracker.ietf.org/doc/html/rfc3092
-3. Global variables are executed before `main()`
+3. Global variables are initialised before executing `main()`
 
 
-### From the [site][https://www.learncpp.com/cpp-tutorial/function-return-values-value-returning-functions/]
+### From the [site][5]
 The C++ standard only defines the meaning of 3 status codes:
 0, EXIT_SUCCESS, and EXIT_FAILURE. 0 and EXIT_SUCCESS both mean
 the program executed successfully. EXIT_FAILURE means the program did not
@@ -218,7 +218,185 @@ If you want to maximize portability, you should only use 0 or
 EXIT_SUCCESS to indicate a successful
 termination, or EXIT_FAILURE to indicate an unsuccessful termination.
 
+### Unnamed params
 
+"In cases where a function param needs to exist  but is not used int he boy of the function you simply omit the name." Note [here][6] states it is to maintain a calling interface to caller functions to this function. This prevents those functions from breaking when the parameter is no longer needed, but the function interface still is.
+
+```c++
+void doSomething(int count){
+  // don't use count here - unreferenced parameter will throw a warning
+}
+```
+
+```c++
+void doSomething(int /*count*/){
+  // perfectly legal function will not throw a warning. Google style requires comments in function header
+}
+```
+
+### Local Scope
+
+Parameters and declared and initialised variables are local to functions or in the local scope of reference.
+
+- when are instantiated variables destroyed here:
+
+```c++
+int add (int x, int y){
+
+  int z{x + y};
+  return z;
+
+}// z, y, and x destroyed here in the opposite order they were created (like a stack)
+```
+
+- class type objects will call a destructor before destruciton occurs.
+- Use of objects after destruction will result in undefined behaviour.
+
+__Lifetime is a runtime property and scope is a compile-time property__.
+A local variable's lifetime ends when it goes out of scope, it is at this point that they are destroyed.
+
+
+
+From the tutorial:
+
+```c++
+#include <iostream>
+
+int add(int x, int y) // x and y are created and enter scope here
+{
+    // x and y are usable only within add()
+    return x + y;
+} // y and x go out of scope and are destroyed here
+
+int main()
+{
+    int a{ 5 }; // a is created, initialized, and enters scope here
+    int b{ 6 }; // b is created, initialized, and enters scope here
+
+    // a and b are usable only within main()
+
+    std::cout << add(a, b) << '\n'; // calls add(5, 6), where x=5 and y=6
+
+    return 0;
+} // b and a go out of scope and are destroyed here
+```
+
+- Execution starts at the top of main.
+- main variable a is created and given value 5.
+- main variable b is created and given value 6.
+- Function add is called with argument values 5 and 6.
+- add parameters x and y are created and initialized with values 5 and 6 respectively.
+- The expression x + y is evaluated to produce the value 11.
+- add copies the value 11 back to caller main.
+- add parameters y and x are destroyed.
+- main prints 11 to the console.
+- main returns 0 to the operating system.
+- main variables b and a are destroyed.
+
+
+Some best-practice
+
+
+When a variable is needed within a function:
+
+- Use a function parameter when the caller will pass in the initialization value for the variable as an argument.
+- Use a local variable otherwise.
+
+
+#### Temporary objects
+Where is the return value of `add(a, b)` stored? In a temporary object. These are destroyed at the end of the full _expression_ they are executed in. When the next statement executes they are destroyed already.
+
+### Forward declarations
+
+```c++
+#include <iostream>
+int add(int x, int y)
+{
+    return x + y;
+}
+int main()
+{
+    std::cout << "The sum of 3 and 4 is: " << add(3, 4) << '\n';
+    return 0;
+}
+```
+
+If you declare you `main()` that calls `add(x,y)` sequentially above `add(x,y)` the compiler won't know abou the function add until after the main function. This is a compile error with two solutions:
+
+1. Declare `add(x, y)` before `main()` as if stating dependencies before the dependent function
+2. Use __Forward Declaration__:
+```c++
+#include <iostream>
+
+int add(int x, int y);
+int add(int, int); // also a valid formal declaration no need to state params
+
+int main()
+{
+    std::cout << "The sum of 3 and 4 is: " << add(3, 4) << '\n';
+    return 0;
+}
+
+int add(int x, int y)
+{
+    return x + y;
+}
+```
+
+Forward declaration is used when we are referring to a function that isn't in the same file but is in the scope of the compiled program files. It can be for variables or other statements.
+
+__Function Prototypes__ are forward declared functions.
+
+If a forward declaration is made AND the function is called but no funciton body defined, the linker and not the compiler will raise an error:
+```text
+Compiling...
+add.cpp
+Linking...
+add.obj : error LNK2001: unresolved external symbol "int __cdecl add(int,int)" (?add@@YAHHH@Z)
+add.exe : fatal error LNK1120: 1 unresolved externals
+```
+
+### Declarations vs Definitions
+
+__Declaration__ tells the compiler the existence of an identifier and its associated type info.
+
+__Definition__ a declaration that acutally implements (function or type)or instantiates (variable) the identifier.
+
+Definitions are a sub-type of declaration. All definitions are declarations but not the other way around.
+
+Declarations that are not definitions are __pure declarations__ like: forward declarations.
+
+### One Definition Rule (ODR)
+
+1. _File_ - each function, var, type or template in a given scope can only have one definition.
+2. _Program_ - each fun or var in a given scope can have only one definition.
+3. _Types, Templates, Inline Functions and inline vars_ are allowed to have dup definitions in diff files so long as definitions are identical.
+
+
+### `std` namespace
+
+`cout` is defined in `std` namespace. `::` is a __scope resolution operator__. If no symbol to the left of `::` is provided then the global namespace is assumed.
+
+An alternative to `std::cout` is to use a `using-directive` statement:
+
+`using namespace std;` < -- brutal.
+
+
+### Intro to Preprocessor
+The entire process of preprocessing, compiling, and linking is called translation.
+
+If you’re curious, [here][7] is a list of translation phases. As of the time of writing, preprocessing encompasses phases 1 through 4, and compilation is phases 5 through 7.
+
+
+`#include` is a preprocessor directive
+
+
+#### Macros
+`#define` is the directive to create a macro.
+  - a macro is a rule of how input text is converted to output text
+  - 2 types: _object-like macros_ and _function-like macros_.
+  - function-like macros act like functions. Their use is considered unsafe.
+  - objects `
 
 <!----Links here--->
 [0]:https://www.learncpp.com/
@@ -226,3 +404,6 @@ termination, or EXIT_FAILURE to indicate an unsuccessful termination.
 [2]:https://code.visualstudio.com/docs/cpp/config-linux#_cc-configurations
 [3]:https://www.learncpp.com/cpp-tutorial/variable-assignment-and-initialization/
 [4]:https://www.learncpp.com/cpp-tutorial/keywords-and-naming-identifiers/
+[5]:https://www.learncpp.com/cpp-tutorial/function-return-values-value-returning-functions/
+[6]:https://www.learncpp.com/cpp-tutorial/introduction-to-function-parameters-and-arguments/
+[7]:https://en.cppreference.com/w/cpp/language/translation_phases.html
