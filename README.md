@@ -187,6 +187,10 @@ Side-effects:
 Expressions need to be part of a statement to execute.
 
 ### First Programs
+Adding and printing: see `./section1Question3.cpp`
+
+## Chapter 1 - Functions and Files
+
 
 
 <!----Links here--->
