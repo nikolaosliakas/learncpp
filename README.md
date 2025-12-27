@@ -396,7 +396,177 @@ If you’re curious, [here][7] is a list of translation phases. As of the time o
   - a macro is a rule of how input text is converted to output text
   - 2 types: _object-like macros_ and _function-like macros_.
   - function-like macros act like functions. Their use is considered unsafe.
-  - objects `
+  - object-like macros are `#define IDENTIFIER substitution text` <-- remember this is processed BEFORE source code.
+  - Recommended to avoid object-like macros with substitution text
+Object-like macros __without__ substitution 
+  - `#define IDENTIFIER` evaluate an identifier and do ... nothing.
+  - Used for selective compilation by encircling selected code in ternery operators: `#ifdef #endif`
+  - super useful as int he case below Bob like will not be compiled!
+  - Conditional compilation
+```c++
+  #include <iostream>
+
+#define PRINT_JOE
+int main(){
+#ifdef PRINT_JOE
+    std::cout << "Joe\n"; // will be compiled since PRINT_JOE is defined
+#endif
+#ifdef PRINT_BOB
+    std::cout << "Bob\n"; // will be excluded since PRINT_BOB is not defined
+#endif
+    return 0;}
+```
+
+Another example is the `#if 0  or #if 1`
+
+```c++
+
+#if 0 // Don't compile anything starting here
+    std::cout << "Bob\n";
+    /* Some
+     * multi-line
+     * comment here
+     */
+    std::cout << "Steve\n";
+#endif // until this point
+```
+##### Scope of Defines
+
+Directives are resolved before compilation. There is complete ignorance of C++ source code during this.
+```c++
+#include <iostream>
+
+void foo()
+{
+#define MY_NAME "Alex"
+}
+
+int main()
+{
+	std::cout << "My name is: " << MY_NAME << '\n';
+
+	return 0;
+}
+```
+
+Even though the directive is inside the body of `foo()`, main() will still output __My name is: Alex__.
+
+You can `#include ` a file that can be 'copied' during preprocessing into another example: a file called `Alex.h`
+```c++
+#define MY_NAME "Alex"
+```
+Is used in `main.cpp`
+```c++
+#include "Alex.h" // copies #define MY_NAME from Alex.h here
+#include <iostream>
+
+int main()
+{
+	std::cout << "My name is: " << MY_NAME << '\n'; // preprocessor replaces MY_NAME with "Alex"
+
+	return 0;
+}
+```
+
+Only directives that are `#include`d from another file have any impact in another file.
+
+Directives are processed and all identifiers are discarded at the end of the file, even if the file is linked. The only 
+exception is the files that have been `#include`d.
+
+### Header files
+
+Usually you need forward declarations for use of different functionality. 
+Two files use functions from a third. Adding forward declarations for functionality to two files is not a problem.
+But as a source includes many more files, there needs to be a different way to use funcitonality across files.
+
+
+Voila:  Header files
+- allows declarations in one place and import where needed.
+
+With forward declarations the files would look liek this:
+1. add.cpp
+```c++
+      int add(int x, int y)
+        {
+        return x + y;
+        }
+ ```
+2. main.cpp
+```c++
+#include<iostream>
+
+int add(int x, int y);// forward declaration
+
+int main()
+{ std::cout<< "5 + 6 = "<< add(5, 6) << '\n'; } 
+```
+With header files:
+1. add.h <<-- notice the `.h` ending.
+```c++
+// We really should have a header guard here, but will omit it for simplicity (we'll cover header guards in the next lesson)
+
+// This is the content of the .h file, which is where the declarations go
+int add(int x, int y); // function prototype for add.h -- don't forget the semicolon!
+```
+2. main.cpp
+```c++
+#include "add.h" // Insert contents of add.h at this point.  Note use of double quotes here.
+#include <iostream>
+
+int main()
+{
+    std::cout << "The sum of 3 and 4 is " << add(3, 4) << '\n';
+    return 0;
+}
+```
+
+### HeaderGuards
+
+Your pre-processor includes two files A and B. B also includes A. If this is done in file
+C. C will have two definitions of A after preprocessing. This will cause the compiler to complain.
+It is good practice then to use header guards.
+
+Header Guards allow for conditional definition headers by the _including_ file (C) only if hte preprocessor
+has _not_ defined the header yet.
+
+```c++
+// square.h
+#ifndef SQUARE_H
+#define SQUARE_H
+
+int getSquareSides()
+{
+    return 4;
+}
+#endif
+
+// wave.h
+#ifndef WAVE_H
+#define WAVE_H
+
+#include "square.h"
+
+#endif
+
+//main.cpp
+#include "square.h"
+#include "wave.h"
+
+int main()
+{
+    return 0;
+}
+```
+
+In the above, if we didn't include the header guard the preprocesser would have copied the function definition
+twice and the compiler would have thrown an error.
+
+#### `#pragma once`
+This is used instead of header guards in modern c++ compilers. CLion defaults to header guards.
+
+### First Program Design
+Design Steps: [here][8].
+
 
 <!----Links here--->
 [0]:https://www.learncpp.com/
@@ -407,3 +577,4 @@ If you’re curious, [here][7] is a list of translation phases. As of the time o
 [5]:https://www.learncpp.com/cpp-tutorial/function-return-values-value-returning-functions/
 [6]:https://www.learncpp.com/cpp-tutorial/introduction-to-function-parameters-and-arguments/
 [7]:https://en.cppreference.com/w/cpp/language/translation_phases.html
+[8]:https://www.learncpp.com/cpp-tutorial/how-to-design-your-first-programs/
