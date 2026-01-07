@@ -681,6 +681,64 @@ int main()
 
 The above will print 'hi' as non-zero inputs are treated as true.
 
+
+### Chars
+
+Works similar to other langs. Cool exception is the generator behaviour of `std::cin.get()`
+```c++
+#include <iostream>
+
+int main()
+{
+    std::cout << "Input a keyboard character: "; // assume the user enters "a b" (without quotes)
+
+    char ch{};
+    std::cin.get(ch); // extracts a, leaves " b\n" in stream
+    std::cout << "You entered: " << ch << '\n';
+
+    std::cin.get(ch); // extracts space, leaves "b\n" in stream
+    std::cout << "You entered: " << ch << '\n';
+    
+    std::cin.get(ch);
+    std::cout << "You entered: " << ch << '\n';
+    return 0;
+}
+
+/*
+* This results in:
+Input a keyboard character: a b
+You entered: a
+You entered:  
+You entered: b
+* */
+```
+1 byte in size for char.
+
+
+### Type Conversion and Casting
+
+```c++
+/*
+* Implicit type conversions occur sometimes with warning of data loss ex. double to int.
+* Explicit type conversions need to use the static_cast operator
+* */
+static_cast<target_type>(expression)
+
+void print(int x){
+
+    std::cout << "The number is: " << x << '\n';
+}
+
+int main(){
+
+// implicit cast results in warning of data loss
+    print(5.5);
+// explicit case NO WARNING from compiler - still prints 5 as the above
+    print( static_cast<int>(5.5) );
+}
+```
+
+
 <!----Links here--->
 [0]:https://www.learncpp.com/
 [1]:https://code.visualstudio.com/docs/cpp/config-linux#_modifying-tasksjson

@@ -9,7 +9,9 @@ file(GLOB files *.cpp)
 # 2. Loop through each file and create an executable for it
 foreach(file ${files})
     get_filename_component(name ${file} NAME_WE)
-    add_executable(${name} ${file}
-            io.cpp
-            introIfQuestion2And3.cpp)
+    add_executable(
+            ${name} ${file}
+#            io.cpp
+#            introIfQuestion2And3.cpp
+    )
 endforeach()
