@@ -567,6 +567,119 @@ This is used instead of header guards in modern c++ compilers. CLion defaults to
 ### First Program Design
 Design Steps: [here][8].
 
+## Chapter 4 - Fundamental Data Types
+* chapter 3 was skipped as it contains debugging.
+
+1. Each byte gets a __memory address__ 8 bits
+2. Integer Types:
+   - short, int, long, long long
+3. Integral ('like an integer' in C++) 
+   - integers, chars, bools
+You can do integer operations on integrals!
+
+8 bytes == 2^8 == 256 permutations 
+Every object needs to occupy at least 1 byte. fundamental data type object sizes are found [here][9].
+
+### SizeOf
+To find the size of a particular data type you can use the `sizeof` operator.
+```c++
+#include <iomanip> // for std::setw (which sets the width of the subsequent output)
+#include <iostream>
+#include <climits> // for CHAR_BIT
+
+int main()
+{
+    std::cout << "A byte is " << CHAR_BIT << " bits\n\n";
+
+    std::cout << std::left; // left justify output
+
+    std::cout << std::setw(16) << "bool:" << sizeof(bool) << " bytes\n";
+    std::cout << std::setw(16) << "char:" << sizeof(char) << " bytes\n";
+    std::cout << std::setw(16) << "short:" << sizeof(short) << " bytes\n";
+    std::cout << std::setw(16) << "int:" << sizeof(int) << " bytes\n";
+    std::cout << std::setw(16) << "long:" << sizeof(long) << " bytes\n";
+    std::cout << std::setw(16) << "long long:" << sizeof(long long) << " bytes\n";
+    std::cout << std::setw(16) << "float:" << sizeof(float) << " bytes\n";
+    std::cout << std::setw(16) << "double:" << sizeof(double) << " bytes\n";
+    std::cout << std::setw(16) << "long double:" << sizeof(long double) << " bytes\n";
+
+    return 0;
+}
+```
+This can also be used on a variable name
+```c++
+#include <iostream>
+
+int main()
+{
+    int x{};
+    std::cout << "This variable has "<< sizeof(x) <<" many bytes\n";
+    return 0;
+}
+```
+
+### Integers
+n-bit signed variable has a range of -(2^(n-1)) to (2^(n-1))-1.
+
+| Type	         | Minimum Size	 | Note                                      |
+|---------------|---------------|-------------------------------------------|
+| short int	    | 16            |                                           |
+| int	          | 16            | Typically 32 bits on modern architectures |
+| long int      | 32            |                                           |
+| long long int | 64            |                                           |
+
+Integer division produces a truncation of the float.
+- 8/5 = 1.6 = 1 (result)
+
+-(2^(5-1)) = -16
+(2^(n-1))-1 - 15
+
+### Booleans
+```c++
+// declaration
+bool b ;
+// inititalization
+
+bool b1 {true};
+bool b2 {false};
+b1 = false;
+bool b3 {}; // default is false
+
+// logical NOT is an exclamation
+bool b4 {!true}; // this will evaltuate to false
+// also a function to toggle alpha rep of true/false == 1/0 is through the standard library
+
+std::cout << std::boolalpha; // prints bools as true or false
+std::cin >> std::boolalpha; // input bools as lowercase 'true' or 'false'
+// this is toggled off with:
+std::noboolalpha;
+```
+
+### If Statements
+```c++
+/*if (condition)
+    true_statement;*/
+ if (x == 0)
+     std::cout << "The value is zero\n";
+```
+
+Truthiness exists because of the evaluation of 0 as false. Non-zero inputs as conditional expressions are treated as true
+```c++
+#include <iostream>
+
+int main()
+{
+    int x { 4 };
+    if (x) // nonsensical, but for the sake of example...
+        std::cout << "hi\n";
+    else
+        std::cout << "bye\n";
+
+    return 0;
+}
+```
+
+The above will print 'hi' as non-zero inputs are treated as true.
 
 <!----Links here--->
 [0]:https://www.learncpp.com/
@@ -578,3 +691,4 @@ Design Steps: [here][8].
 [6]:https://www.learncpp.com/cpp-tutorial/introduction-to-function-parameters-and-arguments/
 [7]:https://en.cppreference.com/w/cpp/language/translation_phases.html
 [8]:https://www.learncpp.com/cpp-tutorial/how-to-design-your-first-programs/
+[9]:https://www.learncpp.com/cpp-tutorial/object-sizes-and-the-sizeof-operator/

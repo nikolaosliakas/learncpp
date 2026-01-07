@@ -10,5 +10,6 @@ file(GLOB files *.cpp)
 foreach(file ${files})
     get_filename_component(name ${file} NAME_WE)
     add_executable(${name} ${file}
-            io.cpp)
+            io.cpp
+            introIfQuestion2And3.cpp)
 endforeach()
