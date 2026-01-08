@@ -100,7 +100,7 @@ double getBuildingHeight() {
     return h;
 }
 double calcBallPosition(double height, double seconds) {
-    return height - 9.8 * (seconds * seconds)/ 2;
+    return height - 9.8 * (seconds * seconds)/ 2.0;
 }
 
 // this is the non-iterating version I think they meant us to write
@@ -113,11 +113,15 @@ void outputCurrBallPosition(double seconds, double ballpos) {
 void outputBallDrop(double height) {
 
     outputCurrBallPosition(0, height);
-    outputCurrBallPosition(1, calcBallPosition(height, 1));
-    outputCurrBallPosition(2, calcBallPosition(height, 2));
-    outputCurrBallPosition(3, calcBallPosition(height, 3));
-    outputCurrBallPosition(4, calcBallPosition(height, 4));
-    outputCurrBallPosition(5, calcBallPosition(height, 5));
+    // outputCurrBallPosition(1, calcBallPosition(height, 1));
+    // outputCurrBallPosition(2, calcBallPosition(height, 2));
+    // outputCurrBallPosition(3, calcBallPosition(height, 3));
+    // outputCurrBallPosition(4, calcBallPosition(height, 4));
+    // outputCurrBallPosition(5, calcBallPosition(height, 5));
+
+    for (int i{1}; i < 6; i++) {
+        outputCurrBallPosition(i, calcBallPosition(height, i));
+    }
 
 }
 int main(){
@@ -130,7 +134,7 @@ int main(){
 
     // Question 3
     // get height of tower in meters
-    double height = getBuildingHeight();
+    double height{getBuildingHeight()};
     outputBallDrop(height);
 
 return 0;

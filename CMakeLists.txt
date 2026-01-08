@@ -11,7 +11,6 @@ foreach(file ${files})
     get_filename_component(name ${file} NAME_WE)
     add_executable(
             ${name} ${file}
-#            io.cpp
-#            introIfQuestion2And3.cpp
+
     )
 endforeach()
