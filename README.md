@@ -882,7 +882,7 @@ The likelihood that an expression is fully evaluated at compile-time can be cate
 2. Possibly: A non-constant expression where the compiler is able to determine all values at compile-time (optimized under the as-if rule).
 3. Likely: A constant expression used in a context that does not require a constant expression.
 4. Always: A constant expression used in a context that requires a constant expression.
-
+w
 Instead of relying on the above. We can force the compiler to expect a constexpr without inspecting the initializers of each variable.
 
 ```c++
@@ -1070,7 +1070,200 @@ C-style string literal.
 - Using an invalidated view (other than using assignment to revalidate the view) will cause undefined behavior.
 - A std::string_view may or may not be null-terminated.
 
+## Operators
+
+All operators are assigned a level of __precedence__. This is the order in which operands are grouped.
+Ex. Mult before + accesses operands.
+
+__Associativity__ is the order of the operators (not operands). For each precedence level there is an associative direction.
+
+Table of precedence and associativity of operators is under the subtitle [Table of operator precendence and associativity][11]
+
+
+```c++
+// order of argument evaluations
+int main(){
+    printCalculation(getValue(), getValue(), getValue()); // this line is ambiguous
+/*
+* The Clang compiler evaluates arguments in left-to-right order. 
+* The GCC compiler evaluates arguments in right-to-left order
+* */
+}
+```
+```c++
+// Questions put parentheses around order of ops
+
+x = 3 + 4 + 5;
+(3 + 4) + 5;
+
+x = y = z;
+x = (y = z); // 16 R->L
+
+z *= ++y + 5; 
+// R -> L , R -> , L -> R
+z *= ( (++y)  + 5)
+
+ a || b && c || d;
+ 
+(a || (b && c)) || d // && has a higher precedence that || 
+```
+
+### Division
+if both operands are integers it will be integer division.
+
+You will need to static_cast to a double/float to retain the fractional output.
+
+### Remainder and Exponentiation
+
+```c++
+// Remainder is the modulo operator %
+#include <iostream>
+
+int main(){
+
+    std::cout << 2 % 4; // the result is 2 integer division 0 with 2 as a remainder. 
+    
+    std::cout << -4 % 2;; // result is -2 - the remainder operator always returns with the sign of the left hand term.
+    std::cout << 4 % -2;; // result is 2 - the remainder operator always returns with the sign of the left hand term.
+    
+    
+    return 0;
+}
+```
+
+#### Exponentiation
+
+`^` - This is the bitwise XOR in c++.
+
+This is how you evaluate exponents.
+```c++
+#include <cmath>
+double x{std::pow(3.0, 4.0); // 3.0 raised to the 4.0 power. 
+```
+
+Below is integer exponentiation. Which may be prefered because `pow()` has return and param signatures of double and may be inaccurate.
+This is done by exponentiation by squaring algo.
+```c++
+#include <cassert> // for assert
+#include <cstdint> // for std::int64_t
+#include <iostream>
+
+// note: exp must be non-negative
+// note: does not perform range/overflow checking, use with caution
+/*
+* 
+* The constexpr specifier allows a function to be evaluated at compile-time if used in a constant expression; 
+* otherwise, 
+* it behaves like a regular function and is evaluated at runtime.*/
+constexpr std::int64_t powint(std::int64_t base, int exp)
+{
+	assert(exp >= 0 && "powint: exp parameter has negative value");
+
+	// Handle 0 case
+	if (base == 0)
+		return (exp == 0) ? 1 : 0;
+
+	std::int64_t result{ 1 };
+	while (exp > 0)
+	{
+		if (exp & 1)  // if exp is odd
+			result *= base;
+		exp /= 2;
+		base *= base;
+	}
+
+	return result;
+}
+
+int main()
+{
+	std::cout << powint(7, 12) << '\n'; // 7 to the 12th power
+
+	return 0;
+}
+```
+### incement decrement
+Because of the extra steps of post fixing, prefer prefixing in your code
+```c++
+#include <iostream>
+
+int main(){
+    int x {5};
+    int y {++x}; // x is incremented to 6, x is evaluated to 6, 6 is assigned to y.
+    int y {x++}; // x is incremented to 6, copy of original x is evaluated to value 5, 5 is assigned to y.
+    
+    return 0;
+}
+```
+
+#### Side effects
+1. change a value of an object
+2. i/o
+3. updating a graphical interface
+
+sequencing of side effects is not prescriptive in the standard.
+```c++
+x + ++x; // this is an unspecified behaviour
+/*
+* gcc and visStudio produce 2 + 2;
+* clang produces 1 + 2;
+* */
+```
+### Conditional operator
+`condition  ? true_branch : false_branch `
+This can be used in places statements cannot like initialization
+
+```c++
+constexpr bool inBigClassroom{true};
+constexpr int classSize{ inBigClassroom ? 50 : 20 }; // this is allowed
+constexpr int classSize{ if(inBigClassroom) 50; else 20; }; // This would not be allowed
+
+// This also will not compile as it is viewed as if it has not been defined!
+// **** Variables defined in if-else also die like those defined in functions.
+    if (inBigClassroom)
+        constexpr int classSize { 30 };
+    else
+        constexpr int classSize { 20 };
+```
+
+### Floating point comparisons
+How to compare floating points
+
+Method 1: distance between a and b is less than the tolerated distance
+```c++
+#include <cmath> // for std::abs()
+
+// absEpsilon is an absolute value
+bool approximatelyEqualAbs(double a, double b, double absEpsilon)
+{
+    // if the distance between a and b is less than or equal to absEpsilon, then a and b are "close enough"
+    return std::abs(a - b) <= absEpsilon;
+}
+```
+
+Method 2: Knuth Art of computer programming vol II - Seminumerical algorithms
+Similar to distance but related to the magnitude of a and b.
+```c++
+#include <algorithm> // for std::max
+#include <cmath>     // for std::abs
+
+// Return true if the difference between a and b is within epsilon percent of the larger of a and b
+bool approximatelyEqualRel(double a, double b, double relEpsilon)
+{
+	return (std::abs(a - b) <= (std::max(std::abs(a), std::abs(b)) * relEpsilon));
+}
+```
+
+explanation [here][12] // Very important link.
+
+Before c++23 you cannot make the above or constexpr qualifier as it `std::abs` was only made `constexpr` in c++23.
+There is a fix at the link above.
+
+
+
+
 <!----Links here--->
+VERY COOL LINK -----> https://wandbox.org can test anything here!
 [0]:https://www.learncpp.com/
 [1]:https://code.visualstudio.com/docs/cpp/config-linux#_modifying-tasksjson
 [2]:https://code.visualstudio.com/docs/cpp/config-linux#_cc-configurations
@@ -1082,3 +1275,5 @@ C-style string literal.
 [8]:https://www.learncpp.com/cpp-tutorial/how-to-design-your-first-programs/
 [9]:https://www.learncpp.com/cpp-tutorial/object-sizes-and-the-sizeof-operator/
 [10]:https://www.learncpp.com/cpp-tutorial/literals/
+[11]:https://www.learncpp.com/cpp-tutorial/operator-precedence-and-associativity/
+[12]:https://www.learncpp.com/cpp-tutorial/relational-operators-and-floating-point-comparisons/
