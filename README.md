@@ -1263,7 +1263,7 @@ There is a fix at the link above.
 
 
 <!----Links here--->
-VERY COOL LINK -----> https://wandbox.org can test anything here!
+VERY COOL LINK https://wandbox.org can test anything here!
 [0]:https://www.learncpp.com/
 [1]:https://code.visualstudio.com/docs/cpp/config-linux#_modifying-tasksjson
 [2]:https://code.visualstudio.com/docs/cpp/config-linux#_cc-configurations

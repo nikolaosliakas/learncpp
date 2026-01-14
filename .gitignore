@@ -42,3 +42,6 @@
 
 # binaries
 output/*
+
+# temp file
+scratch.cpp
