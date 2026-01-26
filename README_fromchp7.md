@@ -870,6 +870,286 @@ int main()
 ```
 ## 9 Testing
 
+Great list of [common semantic errors][5]
+Interesting function pointers(using a function without its call operator `()` so `add` instead of `add()`.
+Using a function’s name without calling it generally yields a function pointer holding the address of the function. Such a function pointer will implicitly convert to a bool value. And since this pointer should never have address 0, that bool value will always be true.
+
+### 9.4 Detecting and Handling errors
+
+__Handling Errors in Functions__
+
+the general strategies for handling errors that occur in functions
+
+1. Handle the error within the function
+2. Pass the error back to the caller to deal with
+ Passing true and fales (`std::optional` exists as a type or `std::expected`) better than a _sentinal value_ used to indicate failure and not able to correctly entered by the user for some reason
+3. Halt the program - fatal aerrors
+4. Throw an exception
+   Use std::cout for all conventional, user-facing text.
+   For an interactive program, use std::cout for normal user-facing error messages (e.g. “Your input was invalid”). Use std::cerr or a logfile for status and diagnostic information that may be helpful for diagnosing issues but probably isn’t interesting for normal users. This can include technical warnings and errors (e.g. bad input to function x), status updates (e.g. successfully opened file x, failed to connect to internet service x), percentage completion of long tasks (e.g. encoding 50% complete), etc…
+   For a non-interactive program (tool or service), use std::cerr for error output only (e.g. could not open file x). This allows errors to be displayed or parsed separately from normal output.
+   For any application type that is transactional in nature (e.g. one that processes specific events, such as an interactive web browser or non-interactive web server), use a logfile to produce a transactional log of events that can be reviewed later. This can include outputting to the logfile which file is being processed, updates on the percentage complete, timestamps of when it started certain stages of computing, warning and error messages, etc…
+
+### 9.5 `std::cin` and valid input handling
+
+__`operator>>`__
+1. First, leading whitespace (spaces, tabs, and newlines at the front of the buffer) is discarded from the input buffer. This will discard any unextracted newline character remaining from a prior line of input.
+2. If the input buffer is now empty, operator>> will wait for the user to enter more data. Leading whitespace is again discarded.
+3. operator>> then extracts as many consecutive characters as it can, until it encounters either a newline character (representing the end of the line of input) or a character that is not valid for the variable being extracted to.
+
+If the characters could not be extracted - C++11 assigns a 0 value and all future extractions fail until `std::cin` is cleared.
+
+Valid Text Inputs
+
+1. Error case 1: Extraction succeeds but input is meaningless
+   - Enter a decimal number: 5 
+      - Enter one of the following: +, -, *, or /: k
+      - Enter a decimal number: 7
+        - `5 k 7 is` 
+   - Steps for input validation
+     - Check whether input meets program expectations
+     - If so - return value to caller
+     - ELSE - tell the user something went wrong and try again.
+2. Error case 2: Extraction succeeds but with extraneous input
+   - Enter a decimal number: 5*7
+   - with each call to `std::cin` a character is being demanded of double so it will take up to 5 leaving '*7\n' in the buffer.
+   - The next call is expecting a char so will take the single '*' without waiting for the user.
+   - number like above The whole program will take from the buffer and execute with the correct answe but he execution is messy.
+
+### 9.6 Assert and `static_assert`
+
+Semantically meangingless
+
+```c++
+void printDivision(int x, int y)
+{
+    if (y != 0)
+        std::cout << static_cast<double>(x) / y;
+    else
+        std::cerr << "Error: Could not divide by zero\n";
+}
+```
+
+`std::exit` - terminates a program but you lose the call stack
+`std::abort` - terminates the program but give the  developer an option to continue debugging at that point by preserving the call stack.
+
+```c++
+#include <cassert>
+    assert(gravity > 0.0); // This object wont reach the ground unless there is positive gravity.
+```
+The asserts passes silently and fails loud using `std::abort`.
+```c++
+// The top fails but without much description, the bottom fails but strings are always 'true' so wont affect the condition
+assert(found);
+/* output: Assertion failed: found, file C:\\VCProjects\\Test.cpp, line 34 */
+assert(found && "Car could not be found in database");
+/* output: Assertion failed: found && "Car could not be found in database", file C:\\VCProjects\\Test.cpp, line 34 */
+
+// Used for when a case isn't needed, but when something is implemented this part of the code will fail and programmer can decide next actions.
+assert(moved && "Need to handle case where student was just moved to another classroom");
+```
+
+Asserts cost runtime so you can use a macro to disable the assert in a given translation unit
+
+`#define NDEBUG` before all any other `#include` will disable the asserts. `#undef NDEBUG` will enable it.
+
+#### `static_assert`
+
+Checked at compile time rather than at runtime.
+
+Not supplied by a header include.
+```c++
+static_assert(condition, diagnostic_message)
+static_assert(sizeof(long) == 8, "long must be 8 bytes");
+static_assert(sizeof(int) >= 4, "int must be at least 4 bytes");
+
+int main()
+{
+	return 0;
+}
+
+// 1>c:\consoleapplication1\main.cpp(19): error C2338: long must be 8 bytes
+```
+
+## 10 Type Conversion, Aliases and Deduction
+
+### Type Conversion
+
+Implicit type conversion, automatic or coercion
+```c++
+double d{3}; // int value implicitly converted to double.
+d = 6; // int value implicitly converted to double.
+double e{4.0 / 12} // 12 is implicitly converted
+
+if (5){} // 5 is converted to a boolean - in this case true as false == 0
+```
+There are 5 different groups of conversions. There are 14 types of conversion in total:
+
+| Category                  | Meaning                                              | Standard Conversion     |
+|---------------------------|------------------------------------------------------|-------------------------|
+| Numeric Promotions        | Small integral types to int or uint, float to double | integral float integral |
+| Numeric Conversions       | Conversions taht aren't promotions (bool to int)     |                         |
+| Qualification Conversions | Add or remove const or volatile from types           |                         |
+| Value Transformations     | Functions to function pointer or value to object     |                         |
+| Pointer Conversions       | `std::nullptr` to pointer or between pointer types   |                         |
+
+
+The Compiler will produce a new value of the desired type. Otherwise failure.
+
+```c++
+
+void printInt(int x)
+{
+    std::cout << x << '\n';
+}
+
+int main()
+{
+    printInt(2);
+
+    short s{ 3 }; // there is no short literal suffix, so we'll use a variable for this one
+    printInt(s); // numeric promotion of short to int
+
+    printInt('a'); // numeric promotion of char to int
+    printInt(true); // numeric promotion of bool to int
+
+    return 0;
+}
+
+
+// The common type between two types!
+#include <type_traits>
+
+std::common_type_t<int, double> // the common type between two types
+```
+
+#### Type Aliases
+
+```c++
+// Distance is an alias for double
+using Distance = double;
+typedef double Distance; // older do not use. Equivalent to the above
+
+Distance milesToDestination{ 3.4 }; // defines a variable of type double
+```
+Used with preprocessers without preprocessers setting INT_2_BYTES - the bottom three will be used as type aliases.
+```c++
+#ifdef INT_2_BYTES
+using int8_t = char;
+using int16_t = int;
+using int32_t = long;
+#else
+using int8_t = char;
+using int16_t = short;
+using int32_t = int;
+#endif
+
+Another use is for large cumbersome types
+using VectPairSI = std::vector<std::pair<std::string, int>>; // make VectPairSI an alias for this crazy type
+
+bool hasDuplicates(VectPairSI pairlist) // use VectPairSI in a function parameter
+{
+    // some code here
+    return false;
+}
+```
+
+#### Type Deduction / Inference
+Implemented in c++ from the use of `auto`
+```c++
+int add(int x, int y)
+{
+    return x + y;
+}
+
+int main()
+{
+    auto d { 5.0 }; // 5.0 is a double literal, so d will be deduced as a double
+    auto i { 1 + 2 }; // 1 + 2 evaluates to an int, so i will be deduced as an int
+    auto x { i }; // i is an int, so x will be deduced as an int
+    auto sum { add(5, 6) }; // add() returns an int, so sum's type will be deduced as an int
+    
+    // Type deduction doesn't pass the qualifiers 
+    const int a { 5 };  // a has type const int
+    const auto b { a }; // b has type const int (const dropped but reapplied)
+    
+    return 0;
+}
+```
+If you want the type deduced from a string literal to be std::string or std::string_view, you’ll need to use the s or sv literal suffixes (introduced in lessons
+```c++
+#include <string>
+#include <string_view>
+    using namespace std::literals; // easiest way to access the s and sv suffixes
+
+    auto s1 { "goo"s };  // "goo"s is a std::string literal, so s1 will be deduced as a std::string
+    auto s2 { "moo"sv }; // "moo"sv is a std::string_view literal, so s2 will be deduced as a std::string_view
+```
+For functions you can use `auto` to have __trailing return types__.
+
+```c++
+auto add(int x, int y) -> int;
+auto divide(double x, double y) -> double;
+double divide(double x, double y); // equivalent
+auto printSomething() -> void;
+auto generateSubstring(const std::string &s, int start, int len) -> std::string;
+```
+
+#### Chapter Quiz
+What type of conversion happens for each of these
+```c++
+int main()
+{
+    int a { 5 }; // 1a - no conversion needed
+    int b { 'a' }; // 1b - numeric conversion - correct answer: numeric promotion 'a' to int
+    int c { 5.4 }; // 1c - won't compile uniform initialisation prevents lossy conversions
+    int d { true }; // 1d - numeric promotion of bool true to int
+    int e { static_cast<int>(5.4) }; // 1e - no conversion needed - correct answe: numeric conversion 5.4 to int
+
+    double f { 5.0f }; // 1f - numeric promotion float to double
+    double g { 5 }; // 1g - numeric conversion int to double
+
+    // Extra credit section
+    long h { 5 }; // 1h - numeric conversion of int to long
+
+    float i { f }; // 1i (uses previously defined variable f) - wont compile prevents narrowing conversion 
+    float j { 5.0 }; // 1j - literals are doulbe - double to float num conversion
+}
+```
+```c++
+// 2a) use type aliases
+
+#include <iostream>
+
+namespace constants
+{
+    constexpr double pi { 3.14159 };
+}
+
+using Degrees = double;
+using Radians = double;
+
+Radians convertToRadians(Degrees degrees)
+{
+    return degrees * constants::pi / 180;
+}
+
+int main()
+{
+    std::cout << "Enter a number of degrees: ";
+    Degrees degrees{};
+    std::cin >> degrees;
+
+    Radians radians { convertToRadians(degrees) };
+    std::cout << degrees << " degrees is " << radians << " radians.\n";
+
+    return 0;
+}
+
+
+```
+
+
 
 <!------ Links----->
 [0]:https://www.learncpp.com/cpp-tutorial/compound-statements-blocks/
@@ -877,3 +1157,4 @@ int main()
 [2]:https://www.learncpp.com/cpp-tutorial/scope-duration-and-linkage-summary/
 [3]:https://www.learncpp.com/cpp-tutorial/introduction-to-random-number-generation/
 [4]:https://cr.yp.to/chacha.html
+[5]:https://www.learncpp.com/cpp-tutorial/common-semantic-errors-in-c/
