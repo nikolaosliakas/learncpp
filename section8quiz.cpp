@@ -187,18 +187,18 @@ int main() {
     while (true) {
         std::cout << "Would you like to play again (y/n)? ";
         std::cin >> contAnswer;
-    switch (contAnswer) {
-        case 'y': return true;
-        case 'n': return false;
-    }
-        /* This was my solution not good.
+    // switch (contAnswer) {
+    //     case 'y': return true;
+    //     case 'n': return false;
+    // }
+        /* This was my solution not good.*/
         if (contAnswer == 'y') {
             guessControl();
         }
         if (contAnswer == 'n') {
             std::cout << "Thank you for playing" << '\n';
             break;
-        } */
+        }
 
     }
 
