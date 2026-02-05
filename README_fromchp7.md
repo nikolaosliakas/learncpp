@@ -1522,7 +1522,690 @@ int main()
     return 0;
 }
 ```
+## F. `constexpr`
 
+`constexpr double circumference{ calcCircumference(3.0)};`
+This either has a compile time error or if `calcCircumference()` is a constexpr function.
+
+This function can be called in a constexpr. Because a normal function call cannot.
+```c++
+constexpr double calcCircumference(double radius) // now a constexpr function
+{
+    constexpr double pi { 3.14159265359 };
+    return 2.0 * pi * radius;
+}
+```
+Marking a function as constexpr means it can be used in a constant expression. It does not mean “will evaluate at compile-time”.
+
+A constant expression (which may contain constexpr function calls) is only required to evaluate at compile-time in contexts where a constant expression is required.
+
+In contexts that do not require a constant expression, the compiler may choose whether to evaluate a constant expression (which may contain constexpr function calls) at compile-time or at runtime.
+
+A runtime (non-constant) expression (which may contain constexpr function calls or non-constexpr function calls) will evaluate at runtime.
+
+
+__the likelihood that a function will actually be evaluated at compile-time as follows__:
+
+1. Always (required by the standard):
+    Constexpr function is called where constant expression is required.
+    Constexpr function is called from other function being evaluated at compile-time.
+2. Probably (there’s little reason not to):
+    Constexpr function is called where constant expression isn’t required, all arguments are constant expressions.
+3. Possibly (if optimized under the as-if rule):
+    Constexpr function is called where constant expression isn’t required, some arguments are not constant expressions but their values are known at compile-time.
+    Non-constexpr function capable of being evaluated at compile-time, all arguments are constant expressions.
+4. Never (not possible):
+    Constexpr function is called where constant expression isn’t required, some arguments have values that are not known at compile-time.
+
+## Chapter 12 - Compound Types: References and Pointers
+Types defined in terms of other existing types.
+
+These are the following compound data types:
+- Functions
+- C-style Arrays
+- Pointer types:
+  - Pointer to object
+  - Pointer to function
+- Pointer to member types:
+  - Pointer to data member
+  - Pointer to member function
+- Reference types:
+  - L-value references
+  - R-value references
+- Enumerated types:
+  - Unscoped enumerations
+  - Scoped enumerations
+- Class types:
+  - Structs
+  - Classes
+  - Unions
+
+### Value categories: lvalue and rvalue
+All expressions in c++ have a type and a value category.
+` auto x{ 4 / 5 }` int / int => int. 
+
+How can compiler know which expressions can legally appear on either side of an assignment.
+
+__Lvalue__ - left val or locator val. evaluates to an identifiable object or function (or bit-field).
+
+```c++
+    int x{};
+    const double d{};
+
+    int y { x }; // x is a modifiable lvalue expression
+    const double e { d }; // d is a non-modifiable lvalue expression
+```
+__rvalue__ - right value evaluates to a value
+```c++
+int return5()
+{
+    return 5;
+}
+
+    int x{ 5 }; // 5 is an rvalue expression
+    const double d{ 1.2 }; // 1.2 is an rvalue expression
+
+    int y { x }; // x is a modifiable lvalue expression
+    const double e { d }; // d is a non-modifiable lvalue expression
+    int z { return5() }; // return5() is an rvalue expression (since the result is returned by value)
+
+    int w { x + 1 }; // x + 1 is an rvalue expression
+    int q { static_cast<int>(d) }; // the result of static casting d to an int is an rvalue expression
+```
+
+__Lvalue to rvalue Conversion__
+
+```c++
+/**
+*In cases where an rvalue is expected but an lvalue is provided, the lvalue will undergo an lvalue-to-rvalue conversion so that it can be used in such contexts. This basically means the lvalue is evaluated to produce its value, which is an rvalue. 
+*/
+int main()
+{
+    int x{ 1 };
+    int y{ 2 };
+
+    x = y; // y is not an rvalue, but this is legal
+
+    return 0;
+}
+```
+An lvalue will implicitly convert to an rvalue. This means an lvalue can be used anywhere an rvalue is expected.
+An rvalue, on the other hand, will not implicitly convert to an lvalue.
+
+### 12.3 Lvalue References
+
+References are aliases for objects.
+Lvalue references
+```c++
+// regular types
+int        // a normal int type (not an reference)
+int&       // an lvalue reference to an int object
+double&    // an lvalue reference to a double object
+const int& // an lvalue reference to a const int object
+```
+Lvalue reference varaibles! - acts a reference to an lvalue (usually another variable)
+```c++
+#include <iostream>
+
+int main()
+{
+    int x { 5 };    // x is a normal integer variable
+    // This is reference initialization
+    int& ref { x }; // ref is an lvalue reference variable that can now be used as an alias for variable x
+
+    std::cout << x << '\n';  // print the value of x (5)
+    std::cout << ref << '\n'; // print the value of x via ref (5)
+
+    return 0;
+}
+```
+You can also use a reference to modify values:
+```c++
+#include <iostream>
+
+int main()
+{
+    int x { 5 }; // normal integer variable
+    int& ref { x }; // ref is now an alias for variable x
+
+    std::cout << x << ref << '\n'; // print 55
+
+    x = 6; // x now has value 6
+
+    std::cout << x << ref << '\n'; // prints 66
+
+    ref = 7; // the object being referenced (x) now has value 7
+
+    std::cout << x << ref << '\n'; // prints 77
+
+    return 0;
+}
+```
+1. When reference is initialized it is __bound__ to that obj or function. AKA __reference binding__
+
+2. types need to match to be initialised as reference:
+   KEY::: Since the result of a conversion is an rvalue, and a non-const lvalue reference can’t bind to an rvalue, trying to bind a non-const lvalue reference to an object that does not match its referenced type will result in a compilation error.
+3. Types cannot be reseated (change in what the reference refers to)
+4. Referents and References have independent lives. 
+    - A reference can be destroyed and the referent can continue without impediment
+    - A referent can be destroyed and the reference will be left __dangling__
+    - Accessing a __dangling reference__ causes undefined behaviour.
+5. References aren't objects - 'variable' is a misnomer as all variables have a name and are objects.
+    - a reference value is not required to edist or occupy storage. Compilers will just replace with the instance of the referent
+    - No reference to a reference, because an lvalue reference must refer to an identifiable object.
+
+#### Temporary object creation
+
+Initializing references with an rvalue:
+```c++
+const int& ref { 5 }; // 5 is an rvalue
+```
+If you try to bind a const lvalue reference to a value of a different type, the compiler will create a temporary object of the same type as the reference, initialize it using the value, and then bind the reference to the temporary.
+
+```c++
+    char c { 'a' };
+    const int& r2 { c };     // temporary int initialized with value 'a', r2 binds to temporary
+```
+
+You can remove the relationship with references by the above process by updating the original object which was decoupled 
+through temporary object creation assuming it will update all references.
+```c++
+int main()
+{
+    short bombs { 1 };         // I can has bomb! (note: type is short)
+
+    const int& you { bombs };  // You can has bomb too (note: type is int&)
+    --bombs;                   // Bomb all gone
+
+    if (you)                   // You still has?
+    {
+        std::cout << "Bombs away!  Goodbye, cruel world.\n"; // Para bailar la bomba
+    }
+
+    return 0;
+}
+/*
+* In the above example, bombs is a short and you is a const int&. Because you can only bind to an int object, when you is initialized with bombs, the compiler will implicitly convert bombs to an int, which results in the creation of a temporary int object (with value 1). you ends up bound to this temporary object rather than bombs.
+
+When bombs is decremented, you is not affected because it is referencing a different object. So although we expect if (you) to evaluate to false, it actually evaluates to true.
+* */
+```
+Lvalue references can only bind to modifiable lvalues.
+
+Lvalue references to const can bind to modifiable lvalues, non-modifiable lvalues, and rvalues. This makes them a much more flexible type of reference.
+
+### 12.5 Pass by lvalue reference
+```c++
+#include <iostream>
+
+void printValue(int y)
+{
+    std::cout << y << '\n';
+} // y is destroyed here
+
+int main()
+{
+    int x { 2 };
+
+    printValue(x); // x is passed by value (copied) into parameter y (inexpensive)
+
+    return 0;
+}
+```
+What is occuring here is _passing by value_. A copy is made of x that forms the input to the argument.
+What if we passed a reference instead? The function could be used and no copy would need to be made.
+
+```c++
+#include <iostream>
+
+void printAddresses(int val, int& ref)
+{
+    std::cout << "The address of the value parameter is: " << &val << '\n';
+    std::cout << "The address of the reference parameter is: " << &ref << '\n';
+}
+
+int main()
+{
+    int x { 5 };
+    std::cout << "The address of x is: " << &x << '\n';
+    printAddresses(x, x);
+
+    return 0;
+}
+/*
+    The address of x is: 0x7ffd16574de0
+    The address of the value parameter is: 0x7ffd16574de4
+    The address of the reference parameter is: 0x7ffd16574de0
+*/
+```
+The ability for functions to modify the value of arguments passed in can be useful. Imagine you’ve written a function that determines whether a monster has successfully attacked the player. If so, the monster should do some amount of damage to the player’s health. If you pass your player object by reference, the function can directly modify the health of the actual player object that was passed in. If you pass the player object by value, you could only modify the health of a copy of the player object, which isn’t as useful.
+
+
+Good practice:
+
+Favor passing by const reference over passing by non-const reference unless you have a specific reason to do otherwise (e.g. the function needs to change the value of an argument).
+Limit modifying argument values in a function.
+
+```c++
+#include <iostream>
+
+void printRef(const int& y) // y is a const reference
+{
+    std::cout << y << '\n';
+}
+
+int main()
+{
+    int x { 5 };
+    printRef(x);   // ok: x is a modifiable lvalue, y binds to x
+
+    const int z { 5 };
+    printRef(z);   // ok: z is a non-modifiable lvalue, y binds to z
+
+    printRef(5);   // ok: 5 is rvalue literal, y binds to temporary int object
+
+    return 0;
+}
+```
+When to use pass by val and pass by reference:
+Fundamental types and enumerated types are cheap to copy, so they are typically passed by value.
+Class types can be expensive to copy (sometimes significantly so), so they are typically passed by const reference.
+
+The following are often passed by value (because it is more efficient):
+
+- Enumerated types (unscoped and scoped enumerations).
+- Views and spans (e.g. std::string_view, std::span).
+- Types that mimic references or (non-owning) pointers (e.g. iterators, std::reference_wrapper).
+- Cheap-to-copy class types that have value semantics (e.g. std::pair with elements of fundamental types, std::optional, std::expected).
+
+Pass by reference should be used for the following:
+- Arguments that need to be modified by the function.
+- Types that aren’t copyable (such as std::ostream).
+- Types where copying has ownership implications that we want to avoid (e.g. std::unique_ptr, std::shared_ptr).
+- Types that have virtual functions or are likely to be inherited from (due to object slicing concerns, covered in lesson 25.9 -- Object slicing).
+
+#### [Comparison of Cost for Pass By Value or Pass By Reference][6]
+Some highlights:
+1. Each time a value parameter is used, the running program can directly access the storage location (CPU register or RAM) of the copied argument. However, when a reference parameter is used, there is usually an extra step. The running program must first directly access the storage location (CPU register or RAM) allocated to the reference, in order to determine which object is being referenced. Only then can it access the storage location of the referenced object (in RAM).
+    Therefore, each use of a value parameter is a single CPU register or RAM access, whereas each use of a reference parameter is a single CPU register or RAM access plus a second RAM access.
+2. For objects that are cheap to copy, the cost of copying is similar to the cost of binding, but accessing the objects is faster and the compiler is likely to be able to optimize better.
+   For objects that are expensive to copy, the cost of the copy dominates other performance considerations.
+3. Neet little function macro for if an object is 'cheap to copy' thus passable by value: Caveat setup costs withstanding
+    ```c++
+   #include <iostream>
+
+    // Function-like macro that evaluates to true if the type (or object) is equal to or smaller than
+    // the size of two memory addresses
+    #define isSmall(T) (sizeof(T) <= 2 * sizeof(void*))
+    
+    struct S
+    {
+    double a;
+    double b;
+    double c;
+    };
+    
+    int main()
+    {
+    std::cout << std::boolalpha; // print true or false rather than 1 or 0
+    std::cout << isSmall(int) << '\n'; // true
+    
+        double d {};
+        std::cout << isSmall(d) << '\n'; // true
+        std::cout << isSmall(S) << '\n'; // false
+    
+        return 0;
+    }
+    ```
+4. `std::string_view` or `std::string&` reference - whcih to prefer? good discussion of why `std::string_view` is faster.
+   ```c++
+    void doSomething(const std::string&);
+    void doSomething(std::string_view);   // prefer this in most cases
+    ```
+
+### 12.7 Intro to Pointers
+
+`char x {};`
+the code generated for this definition is executed, a piece of memory from RAM will be assigned to this object. For the sake of example, let’s say that the variable x is assigned memory address 140. Whenever we use variable x in an expression or statement, the program will go to memory address 140 to access the value stored there.
+
+#### The address-of operator (&)
+```c++
+int x{ 5 };
+std::cout << x << '\n';  // print the value of variable x
+std::cout << &x << '\n'; // print the memory address of variable x
+
+return 0;
+/*
+5
+0027FEA0
+* */
+```
+For objects that use more than one byte of memory, address-of will return the memory address of the first byte used by the object.
+#### The dereference operator (*)
+```c++
+    int x{ 5 };
+    std::cout << x << '\n';  // print the value of variable x
+    std::cout << &x << '\n'; // print the memory address of variable x
+
+    std::cout << *(&x) << '\n'; // print the value at the memory address of variable x (parentheses not required, but make it easier to read)
+/*
+5
+0027FEA0
+5
+* */
+```
+
+#### Definition of Pointer
+
+A __pointer__ is an object that holds the _memory address_ typically of another variable, as its value. these are "dumb pointers"
+as opposed to "smart pointers".
+```c++
+    int x { 5 };    // normal variable
+    int& ref { x }; // a reference to an integer (bound to x)
+
+    int* ptr;       // a pointer to an integer
+    
+    // Wild pointers are uninitialised pointers
+    int x{ 5 };
+    int* ptr;        // an uninitialized pointer (holds a garbage address)
+    int* ptr2{};     // a null pointer (we'll discuss these in the next lesson)
+    int* ptr3{ &x }; // a pointer initialized with the address of variable x
+```
+Iniitalizing a pointer with a literal val is not allowed:
+```c++
+int* ptr{ 5 }; // not okay
+int* ptr{ 0x0012FF7C }; // not okay, 0x0012FF7C is treated as an integer literal
+```
+
+Interesting example of pointer updating
+```c++
+    int x{ 5 };
+    int* ptr{ &x }; // initialize ptr with address of variable x
+
+    std::cout << x << '\n';    // print x's value
+    std::cout << *ptr << '\n'; // print the value at the address that ptr is holding (x's address)
+
+    *ptr = 6; // The object at the address held by ptr (x) assigned value 6 (note that ptr is dereferenced here)
+
+    std::cout << x << '\n';
+    std::cout << *ptr << '\n'; // print the value at the address that ptr is holding (x's address)
+```
+this prints out
+```text
+5
+5
+6
+6
+```
+Initialize variable `x` with 5. Define pointer `ptr` with the reference to the address of variable `x`. Print x's value. 
+Dereference the int pointer `ptr` to retrieve the value held at its memory address and print that value.
+
+assign the value 6 to the address held by the pointer object. Note if this was without the dereference (`*`) operator the 
+assignment of `6` would override the __address__ contianed within the object and not the value of the variable stored at that address.
+
+When we use a pointer without a dereference (ptr), we are accessing the address held by the pointer. Modifying this (ptr = &y) changes what the pointer is pointing at.
+
+When we dereference a pointer (*ptr), we are accessing the object being pointed at. Modifying this (*ptr = 6;) changes the value of the object being pointed at.
+
+**Address Literals are not supported by C++**
+
+It’s worth noting that the address-of operator (`&`) doesn’t return the address of its operand as a literal (as C++ doesn’t support address literals). Instead, it returns a pointer to the operand (whose value is the address of the operand). In other words, given variable `int x`, `&x` returns an `int*` holding the address of `x`.
+
+```c++
+
+int x{4};
+int* ptr{ &x };
+int y{ 16 };
+ptr = &y; // valid - change the address of the int pointer
+*ptr = 30; // valid - change the value of the variable stored at the address that is in the pointer object. y == 30 && *ptr == 30.
+```
+
+### 12.8 Null Pointers
+Null pointers can be initialized through value initiatlization.
+
+```c++
+int* ptr {};
+int* ptr { nullptr }; // nullptr is a keyword as a null pointer literal. Address literals do not exist in c++.
+```
+
+Dangling pointers produce undefined behaviour. The easiest way to ensure that there are none, is to ensure that any pointer 
+points to a null pointer OR a valid object.
+
+Destruction of an object still leaves pointers dangling. 
+
+**Favour references over pointers**.Since references can’t be bound to null, we don’t have to worry about null references. 
+And because references must be bound to a valid object upon creation and then can not be reseated, dangling references are harder to create.
+
+### 12.9 Const and Pointers
+1. A non-const pointer (e.g. `int* ptr`) can be assigned another address to change what it is pointing at.
+2. A const pointer (e.g. `int* const ptr`) always points to the same address, and this address can not be changed.
+3. A pointer to a non-const value (e.g. `int* ptr`) can change the value it is pointing to. These can not point to a const value.
+4. A pointer to a const value (e.g. `const int* ptr`) treats the value as const when accessed through the pointer, and thus can not change the value it is pointing to. These can be pointed to const or non-const l-values (but not r-values, which don’t have an address).
+```c++
+int v{ 5 };
+
+int* ptr0 { &v };             // points to an "int" but is not const itself.  We can modify the value or the address.
+const int* ptr1 { &v };       // points to a "const int" but is not const itself.  We can only modify the address.
+int* const ptr2 { &v };       // points to an "int" and is const itself.   We can only modify the value.
+const int* const ptr3 { &v }; // points to a "const int" and is const itself.  We can't modify the value nor the address.
+
+// if the const is on the left side of the *, the const belongs to the value
+// if the const is on the right side of the *, the const belongs to the pointer
+```
+
+### 12.10 Pass by Address
+```c++
+#include <iostream>
+#include <string>
+
+void printByValue(std::string val) // The function parameter is a copy of str
+{
+    std::cout << val << '\n'; // print the value via the copy
+}
+
+void printByReference(const std::string& ref) // The function parameter is a reference that binds to str
+{
+    std::cout << ref << '\n'; // print the value via the reference
+}
+
+void printByAddress(const std::string* ptr) // The function parameter is a pointer that holds the address of str
+{
+    std::cout << *ptr << '\n'; // print the value via the dereferenced pointer
+}
+
+int main()
+{
+    std::string str{ "Hello, world!" };
+
+    printByValue(str); // pass str by value, makes a copy of str
+    printByReference(str); // pass str by reference, does not make a copy of str
+    printByAddress(&str); // pass str by address, does not make a copy of str
+    
+    std::string* ptr { &str }; // define a pointer variable holding the address of str
+    printByAddress(ptr); // pass str by address, does not make a copy of str
+
+    return 0;
+}
+```
+#### Testing for null pointer dereferencing
+
+Dereferencing a null pointer within a function causes undefined behaviour. 
+Two methods  could be used to avoid this:
+
+```c++
+#include <iostream>
+#include <cassert>
+
+void print(const int* ptr) // now a pointer to a const int
+{
+	assert(ptr); // fail the program in debug mode if a null pointer is passed (since this should never happen)
+
+	// (optionally) handle this as an error case in production mode so we don't crash if it does happen
+	if (!ptr)
+		return;
+
+	std::cout << *ptr << '\n';
+}
+
+int main()
+{
+	int x{ 5 };
+
+	print(&x);
+	print(nullptr);
+
+	return 0;
+}
+```
+### 12.13 In and out parameters
+
+A function and its caller communicate with each other via two mechanisms: parameters and return values. When a function is called, the caller provides arguments, which the function receives via its parameters. These arguments can be passed by value, reference, or address.
+
+This provides a way for a function to return data back to the caller in cases where using a return value is not sufficient for some reason.
+
+__A function parameter that is used only for the purpose of returning information back to the caller is called an out parameter.__
+
+```c++
+#include <cmath>    // for std::sin() and std::cos()
+#include <iostream>
+
+// sinOut and cosOut are out parameters
+void getSinCos(double degrees, double& sinOut, double& cosOut)
+{
+    // sin() and cos() take radians, not degrees, so we need to convert
+    constexpr double pi { 3.14159265358979323846 }; // the value of pi
+    double radians = degrees * pi / 180.0;
+    sinOut = std::sin(radians);
+    cosOut = std::cos(radians);
+}
+int main()
+{
+    double sin { 0.0 };
+    double cos { 0.0 };
+
+    double degrees{};
+    std::cout << "Enter the number of degrees: ";
+    std::cin >> degrees;
+
+    // getSinCos will return the sin and cos in variables sin and cos
+    getSinCos(degrees, sin, cos);
+
+    std::cout << "The sin is " << sin << '\n';
+    std::cout << "The cos is " << cos << '\n';
+    return 0;
+}
+```
+### 12.14 Type deduction pointers, references and cosnt
+From the textbook Summary:
+Top-level vs low-level const:
+
+A top-level const applies to the object itself (e.g. const int x or int* const ptr).
+A low-level const applies to the object accessed through a reference or pointer (e.g. const int& ref, const int* ptr).
+What type deduction deduces:
+
+Type deduction first drops any references (unless the deduced type is defined as a reference). For a const reference, dropping the reference will cause the (low-level) const to become a top-level const.
+Type deduction then drops any top-level const (unless the deduced type is defined as const or constexpr).
+Constexpr is not part of the type system, so is never deduced. It must always be explicitly applied to the deduced type.
+Type deduction does not drop pointers.
+Always explicitly define the deduced type as a reference, const, or constexpr (as applicable), and even if these qualifiers are redundant because they would be deduced. This helps prevent errors and makes it clear what your intent is.
+Type deduction and pointers:
+
+When using auto, the deduced type will be a pointer only if the initializer is a pointer. When using auto*, the deduced type is always a pointer, even if the initializer is not a pointer.
+auto const and const auto both make the deduced pointer a const pointer. There is no way to explicitly specify a low-level const (pointer-to-const) using auto.
+auto* const also makes the deduced pointer a const pointer. const auto* makes the deduced pointer a pointer-to-const. If these are hard to remember, int* const is a const pointer (to int), so auto* const must be a const pointer. const int* is a pointer-to-const (int), so const auto* must be a pointer-to-const)
+Consider using auto* over auto when deducing a pointer type, as it allows you to explicitly reapply both the top-level and low-level const, and will error if a pointer type is not deduced.
+
+### 12.15 `std::optional`
+
+```c++
+#include <iostream>
+#include <optional> // for std::optional (C++17)
+
+// Our function now optionally returns an int value
+std::optional<int> doIntDivision(int x, int y)
+{
+    if (y == 0)
+        return {}; // or return std::nullopt
+    return x / y;
+}
+
+int main()
+{
+    std::optional<int> result1 { doIntDivision(20, 5) };
+    if (result1) // if the function returned a value
+        std::cout << "Result 1: " << *result1 << '\n'; // get the value
+    else
+        std::cout << "Result 1: failed\n";
+
+    std::optional<int> result2 { doIntDivision(5, 0) };
+
+    if (result2)
+        std::cout << "Result 2: " << *result2 << '\n';
+    else
+        std::cout << "Result 2: failed\n";
+
+    return 0;
+}
+
+std::optional<int> o1 { 5 };            // initialize with a value
+std::optional<int> o2 {};               // initialize with no value
+std::optional<int> o3 { std::nullopt }; // initialize with no value
+
+if (o1.has_value()) // call has_value() to check if o1 has a value
+if (o2)             // use implicit conversion to bool to check if o2 has a value
+std::cout << *o1;             // dereference to get value stored in o1 (undefined behavior if o1 does not have a value)
+std::cout << o2.value();      // call value() to get value stored in o2 (throws std::bad_optional_access exception if o2 does not have a value)
+std::cout << o3.value_or(42); // call value_or() to get value stored in o3 (or value `42` if o3 doesn't have a value)
+```
+
+Prefer std::optional for optional return types.
+
+Prefer function overloading for optional function parameters (when possible). Otherwise, use std::optional<T> for optional arguments when T would normally be passed by value. Favor const T* when T is expensive to copy.
+
+
+### 12 Quiz
+#### 1 - For each of the following expressions on the right side of operator <<, indicate whether the expression is an lvalue or rvalue
+
+a. `std::cout << 5;` 5 is an rvalue. 
+b. `int x { 5 }; std::cout << x;`x is an lvalue.
+c. `int x { 5 }; std::cout << x + 1;` x + 1 is an rvalue. Because it evaluates to a value
+d. `int foo() { return 5; } std::cout << foo();` foo() evaluates to a value so is an rvalue expression.
+e. 
+```c++
+int& max(int &x, int &y) { return x > y ? x : y; }
+int x { 5 };
+int y { 6 };
+std::cout << max(x, y);
+```
+rvalue as a max returns the value and evaluates to it??? <<-- incorrect it returns an __lvalue reference__ which is a lvalue...
+
+#### 5
+```c++
+#include <iostream>
+#include <algorithm>
+
+void sort2(int& a, int& b){
+    if (a > b)
+        swap(a, b);
+}
+
+int main()
+{
+    int x { 7 };
+    int y { 5 };
+
+    std::cout << x << ' ' << y << '\n'; // should print 7 5
+
+    sort2(x, y); // make sure sort works when values need to be swapped
+    std::cout << x << ' ' << y << '\n'; // should print 5 7
+
+    sort2(x, y); // make sure sort works when values don't need to be swapped
+    std::cout << x << ' ' << y << '\n'; // should print 5 7
+
+    return 0;
+}
+
+```
 <!------ Links----->
 [0]:https://www.learncpp.com/cpp-tutorial/compound-statements-blocks/
 [1]:https://www.learncpp.com/cpp-tutorial/inline-functions-and-variables/
@@ -1530,3 +2213,4 @@ int main()
 [3]:https://www.learncpp.com/cpp-tutorial/introduction-to-random-number-generation/
 [4]:https://cr.yp.to/chacha.html
 [5]:https://www.learncpp.com/cpp-tutorial/common-semantic-errors-in-c/
+[6]:https://www.learncpp.com/cpp-tutorial/pass-by-const-lvalue-reference/
