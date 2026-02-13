@@ -2204,6 +2204,1057 @@ int main()
 
     return 0;
 }
+```
+## Chapter 13 - Structs and Enums
+
+### User Defined Types
+```c++
+// Define a program-defined type named Fraction so the compiler understands what a Fraction is
+// (we'll explain what a struct is and how to use them later in this chapter)
+// This only defines what a Fraction type looks like, it doesn't create one
+struct Fraction
+{
+	int numerator {};
+	int denominator {};
+}; // MUST end in a semi-colon
+
+// Now we can make use of our Fraction type
+int main()
+{
+	Fraction f { 3, 4 }; // this actually instantiates a Fraction object named f
+
+	return 0;
+}
+#include "Fraction.h" // include our Fraction definition in this code file
+
+// Now we can make use of our Fraction type
+int main()
+{
+	Fraction f{ 3, 4 }; // this actually creates a Fraction object named f
+
+	return 0;
+}
+```
+1. Cannot forward declare user-defined types - whole typedef must be visible.
+
+Program-defiend types == user-defined types
+
+They are defined in their own `.h` and included where needed.
+
+The following is dumb:
+
+The C++ language standard uses the term “user-defined type” in a non-conventional manner. In the language standard, a “user-defined type” is any class type or enumerated type that is defined by you, the standard library, or the implementation (e.g. types defined by the compiler to support language extensions). Perhaps counter-intuitively, this means std::string (a class type defined in the standard library) is considered to be a user-defined type!
+
+### 13.2 Unscoped Enumerations
+An __enumeration__ (also called an __enumerated type__ or an __enum__) is a compound data type whose values are restricted to a set 
+of named symbolic constants (called __enumerators__).
+
+
+```c++
+// Define a new unscoped enumeration named Color
+enum Color
+{
+    // Here are the enumerators
+    // These symbolic constants define all the possible values this type can hold
+    // Each enumerator is separated by a comma, not a semicolon
+    red,
+    green,
+    blue, // trailing comma optional but recommended
+}; // the enum definition must end with a semicolon
+
+int main()
+{
+    // Define a few variables of enumerated type Color
+    Color apple { red };   // my apple is red
+    Color shirt { green }; // my shirt is green
+    Color cup { blue };    // my cup is blue
+
+    Color socks { white }; // error: white is not an enumerator of Color
+    Color hat { 2 };       // error: 2 is not an enumerator of Color
+
+    return 0;
+}
+```
+Unscoped Enumerators put it into a global scope. This pollutes so instead of referring the enumerators with their enumeration
+`Colour::red` we can put them in a namespace that limits the accidental name collision
+
+```c++
+namespace Color
+{
+    // The names Color, red, blue, and green are defined inside namespace Color
+    enum Color
+    {
+        red,
+        green,
+        blue,
+    };
+}
+namespace Feeling
+{
+    enum Feeling
+    {
+        happy,
+        tired,
+        Blue
+    }
+}
+// scope is then limited to the namespaces
+int main()
+{
+    Color::Color paint{ Color::blue };
+    Feeling::Feeling me{ Feeling::blue };
+
+    return 0;
+}
+```
+#### Quiz 13.2
+```c++
+/*
+* Define an unscoped enumerated type named MonsterType to choose between the following monster races: 
+* orc, goblin, troll, ogre, and skeleton.*/
+
+enum MonsterType{
+    orc,
+    goblin,
+    troll,
+    skeleton
+};
+/*
+* Put the MonsterType enumeration inside a namespace. Then, create a main() function and instantiate a troll. The program should compile.
+* */
+namespace Monster
+{
+    enum MonsterType{
+    orc,
+    goblin,
+    troll,
+    skeleton
+    };
+}
+
+int main(){
+    [[maybe_unused]]Monster::MonsterType monster { Monster::troll };
+    return 0;
+}
+
+```
+### 13.3 Unscoped Enumeration Conversions
+
+```c++
+/*
+* When we define an enumeration, each enumerator is automatically associated with an integer value based on its position in the enumerator list. By default, the first enumerator is given the integral value 0, and each subsequent enumerator
+*  has a value one greater than the previous enumerator:
+* */
+enum Color
+{
+    black,   // 0
+    red,     // 1
+    blue,    // 2
+    green,   // 3
+    white,   // 4
+    cyan,    // 5
+    yellow,  // 6
+    magenta, // 7
+};
+```
+Different compiler implementations choose the __base type__ that represents the value of enumerators.
+In most cases this is an `int`. 
+
+If you were in a bandwidth-sensative context (network packets) you may want to specify a smaller type
+```c++
+#include <cstdint>  // for std::int8_t
+enum Color : std::int8_t
+{
+    black,
+    red,
+    blue,
+};
+```
+### 13.4 Converting an enum to a string
+
+```c++
+#include <iostream>
+#include <string_view>
+enum Colour
+{
+    black,
+    red,
+    blue,
+};
+
+std::string_view getColourName(Colour color){
+
+    switch (color)
+    {
+        // it is o k for the function to return std::string_view
+        //  literals exist for the entire program and so string will still exist after function returns to the caller
+        case black: return "black";
+        case red: return "red";
+        case blue: return "blue";
+        default: return "???";
+    }
+}
+
+int main(){
+
+    constexpr Colour shirt{ blue};
+    
+    std::cout << "Your shirt is "<< getColourName(shirt) << '\n';
+}
+```
+Getting Enumerator from string
+
+```c++
+#include <iostream>
+#include <optional> // for std::optional
+#include <string>
+#include <string_view>
+
+enum Pet
+{
+    cat,   // 0
+    dog,   // 1
+    pig,   // 2
+    whale, // 3
+};
+
+constexpr std::string_view getPetName(Pet pet)
+{
+    switch (pet)
+    {
+    case cat:   return "cat";
+    case dog:   return "dog";
+    case pig:   return "pig";
+    case whale: return "whale";
+    default:    return "???";
+    }
+}
+
+constexpr std::optional<Pet> getPetFromString(std::string_view sv)
+{
+    // We can only switch on an integral value (or enum), not a string
+    // so we have to use if-statements here
+    if (sv == "cat")   return cat;
+    if (sv == "dog")   return dog;
+    if (sv == "pig")   return pig;
+    if (sv == "whale") return whale;
+
+    return {};
+}
+
+int main()
+{
+    std::cout << "Enter a pet: cat, dog, pig, or whale: ";
+    std::string s{};
+    std::cin >> s;
+    // pet is contained as a std::optional object which contains its value
+    // std::optional works like pointers accept it doesn't contain an addrsss but a vlaue
+    // this object is returned to the variable 'pet'
+    std::optional<Pet> pet { getPetFromString(s) };
+    // if conversion to boolean is TRUE --> dereference pet std::option variable.
+    if (!pet)
+        std::cout << "You entered an invalid pet\n";
+    else
+        std::cout << "You entered: " << getPetName(*pet) << '\n';
+
+    return 0;
+}
+```
+
+### 13.5 Introduction to Operator Overloading
+
+Steps:
+1. Define a function using the name of the operator as the function’s name.
+2. Add a parameter of the appropriate type for each operand (in left-to-right order). One of these parameters must be a user-defined type (a class type or an enumerated type), otherwise the compiler will error.
+3. Set the return type to whatever type makes sense
+4. Use a return statement to return the result of the operation.
+
+`operator<<` has a number of overloaded function prototypes.
+For the expression `std::cout << 5`, the compiler will look for an overload operator function that can handle args of type
+`std::ostream` (output stream) and 'int'. The compiler returns its left most operand to evaluate the next right-operands.
+
+```c++
+#include <iostream>
+#include <string_view>
+
+enum Color
+{
+	black,
+	red,
+	blue,
+};
+
+constexpr std::string_view getColorName(Color color)
+{
+    switch (color)
+    {
+    case black: return "black";
+    case red:   return "red";
+    case blue:  return "blue";
+    default:    return "???";
+    }
+}
+constexpr std::optional<Pet> getPetFromString(std::string_view sv)
+{
+    if (sv == "cat")   return cat;
+    if (sv == "dog")   return dog;
+    if (sv == "pig")   return pig;
+    if (sv == "whale") return whale;
+
+    return {};
+}
+
+// pet is an in/out parameter
+std::istream& operator>>(std::istream& in, Pet& pet)
+{
+    std::string s{};
+    in >> s; // get input string from user
+
+    std::optional<Pet> match { getPetFromString(s) };
+    if (match) // if we found a match
+    {
+        pet = *match; // dereference std::optional to get matching enumerator
+        return in;
+    }
+
+    // We didn't find a match, so input must have been invalid
+    // so we will set input stream to fail state
+    in.setstate(std::ios_base::failbit);
+
+    // On an extraction failure, operator>> zero-initializes fundamental types
+    // Uncomment the following line to make this operator do the same thing
+    // pet = {};
+
+    return in;
+}
+// Teach operator<< how to print a Color
+// std::ostream is the type of std::cout, std::cerr, etc...
+// The return type and parameter type are references (to prevent copies from being made)
+std::ostream& operator<<(std::ostream& out, Color color)
+{
+    out << getColorName(color); // print our color's name to whatever output stream out
+    return out;                 // operator<< conventionally returns its left operand
+    // The above can be condensed to the following single line:
+    // return out << getColorName(color)
+}
+int main()
+{
+	Color shirt{ blue };
+	std::cout << "Your shirt is " << shirt << '\n'; // it works!
+    std::cout << "Enter a pet: cat, dog, pig, or whale: ";
+    Pet pet{};
+    std::cin >> pet;
+
+    if (std::cin) // if we found a match
+        std::cout << "You chose: " << getPetName(pet) << '\n';
+    else
+    {
+        std::cin.clear(); // reset the input stream to good
+        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        std::cout << "Your pet was not valid\n";
+    }
+	return 0;
+}
+```
+### 13.6 Scoped Enumerations Enum Classes
+
+Two differences to unscoped enumerations:
+1. No implicit conversions to integers
+2. Enumerators are only placed into the scope region of the enumeration not into the scope region where the enumeration is defined. scoped enumerations act like a namespace for their enumerators.
+
+```c++
+int main()
+{
+    enum class Color // "enum class" defines this as a scoped enumeration rather than an unscoped enumeration
+    {
+        red, // red is considered part of Color's scope region
+        blue,
+    };
+
+    enum class Fruit
+    {
+        banana, // banana is considered part of Fruit's scope region
+        apple,
+    };
+
+    Color color { Color::red }; // note: red is not directly accessible, we have to use Color::red
+    Fruit fruit { Fruit::banana }; // note: banana is not directly accessible, we have to use Fruit::banana
+
+    if (color == fruit) // compile error: the compiler doesn't know how to compare different types Color and Fruit
+        std::cout << "color and fruit are equal\n";
+    else
+        std::cout << "color and fruit are not equal\n";
+    return 0;
+}
+```
+Question 1 13.6
+```c++
+#include<iostream>
+
+enum class Animal
+    {
+        pig,
+        chicken,
+        goat,
+        cat,
+        dog,
+        duck
+    };
+constexpr std::string_view getAnimalName(Animal animal) 
+{
+using enum Animal; // bring all Animal enumerators into current scope (C++20)
+    // We can now access the enumerators of Color without using a Color:: prefix
+    switch(animal){
+        case pig : return "pig";
+        case chicken : return "chicken";
+        case goat : return "goat";
+        case cat : return "cat";
+        case dog : return "dog";
+        case duck : return "duck";
+        default : return "???";
+    }
+}
+int getNumberOfLegs(Animal animal){
+using enum Animal; 
+        switch(animal){
+        case pig : return 4;
+        case chicken : return 2;
+        case goat : return 4;
+        case cat : return 4;
+        case dog : return 4;
+        case duck : return 2;
+        default : return -1;
+    }
+}
+
+void printNumberOfLegs(Animal& animal){
+    
+    std::cout << "A " << getAnimalName(animal) << " has " << getNumberOfLegs(animal) " legs." << '\n';
+    
+}
+
+int main(){
+    Animal animal1{Animal::cat};
+    Animal animal2{Animal::chicken};
+    
+    printNumberOfLegs(animal1);
+    printNumberOfLegs(animal2);
+    
+}
+
+// From the lesson solutions:
+void printNumberOfLegs(Animal animal)
+{
+    std::cout << "A " << getAnimalName(animal) << " has ";
+
+    // If C++20 capable, could use `using enum Animal` here to reduce Animal prefix redundancy
+    switch (animal)
+    {
+        case Animal::chicken:
+        case Animal::duck:
+            std::cout << 2;
+            break;
+
+        case Animal::pig:
+        case Animal::goat:
+        case Animal::cat:
+        case Animal::dog:
+            std::cout << 4;
+            break;
+
+        default:
+            std::cout << "???";
+            break;
+    }
+
+    std::cout << " legs.\n";
+}
+
+int main()
+{
+    printNumberOfLegs(Animal::cat);
+    printNumberOfLegs(Animal::chicken);
+
+    return 0;
+}
+
+```
+
+### 13.7 Structs
+
+Program defined types
+
+Structs are class type (class and unions are also class type program defined types)
+
+
+
+```c++
+
+// this is atype definition for struct Employy
+
+struct Employee
+
+{
+
+    // data members
+
+    int id {};
+
+    int age {};
+
+    double wage {};
+
+}
+
+int main(){
+
+ 
+
+    Employee joe {}; // create an employee joe.
+
+    joe.age = 32; // '.' is a the member section operator!
+
+ 
+
+    std::cout << joe.age << '\n';
+
+    return 0;
+
+}
+
+```
+
+### 13.8 Struct Aggregate Initialization
+
+
+
+Aggregate data type - is one that contains many members.
+
+
+
+Some agg types (like structs) allow members of different type - some require all the same type (arrays)
+
+
+
+Structs with ony data members are aggregates.
+
+
+
+Aggreagtes allow for _list-initialisation_ to directly initialise the data members of the aggregate type.
+
+
+
+```c++
+
+// id, age, wage
+
+    Employee frank = { 1, 32, 60000.0 }; // copy-list initialization using braced list
+
+    Employee joe { 2, 28, 45000.0 };     // list initialization using braced list (preferred)
+
+```
+
+Default behaviour when values are not list initialised:
+
+```c++
+
+struct Employee
+
+{
+
+    int id {};
+
+    int age {};
+
+    double wage { 76000.0 };
+
+    double whatever;
+
+};
+
+ 
+
+int main()
+
+{    Employee joe { 2, 28 }; // joe.whatever will be value-initialized to 0.0
+
+    return 0;}
+
+/*
+
+In the above example, joe.id will be initialized with value 2 and joe.age will be initialized with value 28. Because joe.wage wasn’t given an explicit initializer but has a default member initializer, joe.wage will be initialized to 76000.0. And finally, because joe.whatever wasn’t given an explicit initializer, joe.whatever is value-initialized to 0.0.
+
+*/
+
+```
+
+C++20 adds __designated initialisers__ (has to follow order)
+
+```c++
+
+struct Foo
+
+{
+
+    int a{ };
+
+    int b{ };
+
+    int c{ };
+
+};
+
+int main()
+
+{
+
+    Foo f1{ .a{ 1 }, .c{ 3 } }; // ok: f1.a = 1, f1.b = 0 (value initialized), f1.c = 3
+
+    Foo f2{ .a = 1, .c = 3 };   // ok: f2.a = 1, f2.b = 0 (value initialized), f2.c = 3
+
+    Foo f3{ .b{ 2 }, .a{ 1 } }; // error: initialization order does not match order of declaration in struct
+
+}
+
+```
+
+### 13.10 Passing and Returning Structs
+
+
+
+Printing structs and accessing in the function the data members
+
+
+
+```c++
+
+#include <iostream>
+
+ 
+
+struct Employee {
+
+ 
+
+    int id{};
+
+    int age{};
+
+    double wage{};
+
+}
+
+ 
+
+void printEmployee(const Employee& employee){
+
+    std::cout << "ID: " << employee.id <<'\n';
+
+    std::cout << "Age: " << employee.age <<'\n';
+
+    std::cout << "Wage: " << employee.wage <<'\n';
+
+}
+
+ 
+
+int main(){
+
+ 
+
+    Employee joe {0, 33, 24.00};
+
+    Employee francis {1, 21, 12.00};
+
+    printEmployee(joe);
+
+ 
+
+    std::cout << '\n';
+
+ 
+
+    printEmployee(frank);
+
+ 
+
+    return 0;
+
+}
+
+```
+
+
+
+#### Quiz
+
+Q1
+
+```c++
+
+#include <iostream>
+
+ 
+
+struct AdRecord {
+
+    int adsWatched{}; // how many ads watched
+
+    double percentUsersAdClick{}; // percentage of users that clicked on ad
+
+    double avgEarningsPerClickedAd{}; // avg Earning per clicked add.    
+
+    };
+
+ 
+
+AdRecord getAdRecordFromUser(){
+
+ 
+
+    AdRecord record {};
+
+    std::cout << "How many ads watched today?\n";
+
+    std::cin >> record.adsWatched;
+
+    std::cout << "What percentage of users clicked an add?\n";
+
+    std::cin >> record.percentUsersAdClick;
+
+    std::cout << "What was the average earning of clicked adds?\n";
+
+    std::cin >> record.avgEarningsPerClickedAd;
+
+    return record;
+
+}
+
+void printAdRecordAndDayRevenue(const AdRecord& record){
+
+    std::cout << "Ads watched: " << record.adsWatched << '\n';
+
+    std::cout << "Percentage of Users clicked add: " << record.percentUsersAdClick << '\n';
+
+    std::cout << "Average Earning per click Ad: " << record.avgEarningsPerClickedAd << '\n';
+
+    std::cout << "Total Day Revenue =  " <<
+
+        record.adsWatched *
+
+        (record.percentUsersAdClick / 100) *
+
+        record.avgEarningsPerClickedAd
+
+    << '\n';
+
+ 
+
+}
+
+int main(){
+
+ 
+
+    AdRecord adCalcInputs {getAdRecordFromUser()};
+
+    printAdRecordAndDayRevenue(adCalcInputs);
+
+ 
+
+    return 0;
+
+}
+
+```
+
+
+
+### 13.12 Member Selection with pointers and references
+
+
+
+`Employee* ptr{ &joe };` This creates an Employee pointer from the struct instantiation joe.
+
+```c++
+
+struct Point
+
+{
+
+    double x {};
+
+    double y {};
+
+};
+
+ 
+
+struct Triangle
+
+{
+
+    Point* a {};
+
+    Point* b {};
+
+    Point* c {};
+
+};
+
+    Point a {1,2};
+
+    Point b {3,7};
+
+    Point c {10,2};
+
+ 
+
+    Triangle tr { &a, &b, &c };
+
+    Triangle* ptr {&tr};
+
+std::cout << "The ID for the employee is " << (*ptr).id <<'\n';
+
+ 
+
+// Member selection from pointer operator (->) equivalent to above
+
+std::cout << "The ID for the employee is " << ptr->id <<'\n';
+
+ 
+
+    // access via operator.
+
+    std::cout << (*(*ptr).c).y << '\n'; // ugly!
+
+ 
+
+    // access via operator-> YOU CAN CHAIN THESE!
+
+    std::cout << ptr -> c -> y << '\n'; // much nicer
+
+```
+
+### 13.14 Class Templates
+
+
+
+```c++
+
+// Function templates:
+
+template <typename T>
+
+T max(T x, T y)
+
+{
+
+    return (x > y) ? x : y;
+
+}
+
+// Class Templates
+
+ 
+
+struct PairInt
+
+{
+
+    int first{};
+
+    int second{};
+
+};
+
+struct PairDouble
+
+{
+
+    double first{};
+
+    double second{};
+
+};
+
+// The above two are able to be templated
+
+template <typename T>
+
+struct Pair
+
+{
+    T first{};
+    T second{};
+
+}
+
+
+int main()
+
+{
+
+    Pair<int> p1{5 , 6};
+
+    std::cout << p1.first << ' ' << p1.second << '\n';
+
+ 
+
+    Pair<double> p2{ 5.34 , 6.657};
+
+    std::cout << p2.first << ' ' << p2.second << '\n';
+
+    return 0;
+
+}
+
+```
+Multiple Files for class templates
+
+Same as function templates (use header to define and included in files that are needed)
+
+REMEmBER: Type definitions and template definitions are excluded from the One-Definition Rule
+
+__pair.h__
+```c++
+#ifndef PAIR_H
+#define PAIR_H
+
+template <typename T>
+struct Pair
+{
+    T first{};
+    T second{};
+};
+
+template <typename T>
+constexpr T max(Pair<T> p)
+{
+    return (p.first < p.second ? p.second : p.first);
+}
+
+#endif
+```
+
+__foo.cpp__
+```c++
+#include "pair.h"
+#include <iostream>
+
+void foo()
+{
+    Pair<int> p1{ 1, 2 };
+    std::cout << max(p1) << " is larger\n";
+}
+```
+
+__main.cpp__
+```c++
+#include "pair.h"
+#include <iostream>
+
+void foo(); // forward declaration for function foo()
+
+int main()
+{
+    Pair<double> p2 { 3.4, 5.6 };
+    std::cout << max(p2) << " is larger\n";
+
+    foo();
+
+    return 0;
+}
+```
+
+### 13.14 Class template argument deduction CTAD
+
+```c++
+#include <utility> // for std::pair
+
+int main()
+{
+    // CTAD only occurs when NO template argument list is present (line 3 has an empty argument list and errors out with two few arguments provided)
+    std::pair<int, int> p1{ 1, 2 }; // explicitly specify class template std::pair<int, int> (C++11 onward)
+    std::pair p2{ 1, 2 };           // CTAD used to deduce std::pair<int, int> from the initializers (C++17)
+
+    std::pair<> p1 { 1, 2 };    // error: too few template arguments, both arguments not deduced
+    std::pair<int> p2 { 3, 4 }; // error: too few template arguments, second argument not deduced
+
+    return 0;
+}
+```
+CTAD doesnt work on function parapeters
+
+### 13.15 Alias templates
+You can type alias explicit types of a class template
+```c++
+#include <iostream>
+
+template <typename T>
+struct Pair
+{
+    T first{};
+    T second{};
+}
+
+template <typename T>
+void print(const Pair<T>& p)
+{
+    std::cout << p.first << ' '<< p.second << '\n';
+}
+
+int main()
+{
+    using Point = Pair<int>; // create normal type alias
+    Point p {1 , 2};    // compiler repaces Point with Pair<int>
+    template <typename T>
+    using Coord = Pair<T>; // Coord is an alias for Pair<T>
+    Coord<int> p1 { 1, 2 }; // Pre C++-20: We must explicitly specify all type template argument
+    Coord p2 { 1, 2 };      // In C++20, we can use alias template deduction to deduce the template arguments in cases where CTAD works
+    print(p);
+    return 0;
+}
+```
+### 13.x Quiz
+1.h - pass by: value, const reference or const address
+- int (when null is a valid argument)
+
+- Normally we’d pass an int by value, but if we want to be able to pass a null value also, then pass by address is a good choice, as we can pass in either the address of the int, or nullptr.
+
+3. Create a class template named Triad that has 3 members of the same template type. 
+   - Also create a function template named print that can print a Triad.
+```c++
+#include <iostream>
+template <typename T>
+struct Triad
+{
+    T x{};
+    T y{};
+    T z{};
+};
+
+// If using C++17, we need to provide a deduction guide (not required in C++20)
+// A Triad with three arguments of the same type should deduce to a Triad<T>
+template <typename T>
+Triad(T, T, T) -> Triad<T>;
+
+template <typename T>
+void print(const Triad<T>& tr){
+
+    std::cout << '[' << tr.x << ', ' << tr.y << ', ' << tr.z  <<']'
+}
+
+int main()
+{
+	Triad t1{ 1, 2, 3 }; // note: uses CTAD to deduce template arguments
+	print(t1);
+
+	Triad t2{ 1.2, 3.4, 5.6 }; // note: uses CTAD to deduce template arguments
+	print(t2);
+
+	return 0;
+}
 
 ```
 <!------ Links----->
