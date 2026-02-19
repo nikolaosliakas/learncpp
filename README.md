@@ -3,7 +3,7 @@
 [learn-cpp][0] is the source of most work within this repository.
 
 ## Contents
-[1. Introduction](##Intro-and-build)
+[1. Introduction][Intro-and-build]
 
 ## Intro and build
 
@@ -1259,11 +1259,9 @@ explanation [here][12] // Very important link.
 Before c++23 you cannot make the above or constexpr qualifier as it `std::abs` was only made `constexpr` in c++23.
 There is a fix at the link above.
 
-
-
-
-<!----Links here--->
+https://google.github.io/styleguide/cppguide.html
 VERY COOL LINK https://wandbox.org can test anything here!
+<!----Links here--->
 [0]:https://www.learncpp.com/
 [1]:https://code.visualstudio.com/docs/cpp/config-linux#_modifying-tasksjson
 [2]:https://code.visualstudio.com/docs/cpp/config-linux#_cc-configurations
