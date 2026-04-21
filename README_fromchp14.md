@@ -1361,7 +1361,64 @@ Questions:
         std::cout << word[1] << word.at(1) << '\n'
    }
    ```
+   
+Overloading the `operator[]` will allow you to use a string or an array or a vector if you template the function/ expression 
 
+```c++
+#include <iostream>
+#include <vector>
 
+template<typename T>
+void printFirstElement(const T& arr){
+//void printFirstElement(const auto& arr){ // equivalent with C++20 for abbreviated template
+    std::cout << "The first element is: " << arr[0] << '\n';
+}
+
+int main()
+{
+    std::vector arr{9 , 7 , 8};
+    printFirstElement(arr);
+return 0;
+}
+```
+
+Write a function that takes two parameters: a std::vector and an index. If the index is out of bounds, print an error. If the index is in bounds, print the value of the element.
+
+```c++
+#include <iostream>
+#include <vector>
+
+// Write your printElement function here
+template <typename T>
+void printElement(const std::vector<T>& vec, int index){
+    auto length { std::ssize(vec)};
+    if(index > (length - 1) || index < 0){
+        std::cout << "Invalid index\n";
+    } else{
+        std::cout << "The element has a value of " << vec[index] << '\n';
+    }
+}
+
+int main()
+{
+    std::vector v1 { 0, 1, 2, 3, 4 };
+    printElement(v1, 2);
+    printElement(v1, 5);
+
+    std::vector v2 { 1.1, 2.2, 3.3 };
+    printElement(v2, 0);
+    printElement(v2, -1);
+
+    return 0;
+}
+/*
+* The element has value 2
+Invalid index
+The element has value 1.1
+Invalid index
+* 
+* */
+
+```
 <!------ Links----->
 [0]:https://www.learncpp.com/cpp-tutorial/introduction-to-object-oriented-programming/
