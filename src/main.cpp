@@ -2,6 +2,7 @@
 // #include "chp13_quiz.h"
 #include "chp14_quiz.h"
 #include "chp14q2_quiz.h"
+#include "chp15_5_quiz.h"
 
 int main() {
     // Chapter 13
@@ -9,7 +10,8 @@ int main() {
     // initAndPrintTriads();
     // Chapter 14
     // initAndPrintPoints();
-    initAndPrintFraction();
-
+    // initAndPrintFraction();
+    // Chapter 15
+    defineAndPrintTriad();
     return 0;
 }
